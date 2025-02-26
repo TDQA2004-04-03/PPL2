@@ -1,6 +1,7 @@
 from MiniGoVisitor import MiniGoVisitor
 from MiniGoParser import MiniGoParser
 from AST import *
+from functools import reduce
 
 class ASTGeneration(MiniGoVisitor):
     # Visit a parse tree produced by MiniGoParser#program.
@@ -145,19 +146,19 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#interfacedecl.
     def visitInterfacedecl(self, ctx:MiniGoParser.InterfacedeclContext):
-        return self.visitChildren(ctx)
-
+        return InterfaceType(name=ctx.ID().getText(), methods=[self.visit(c) for c in ctx.method_signature()])
 
     # Visit a parse tree produced by MiniGoParser#method_signature.
     def visitMethod_signature(self, ctx:MiniGoParser.Method_signatureContext):
-        return self.visitChildren(ctx)
-
+        if ctx.typedef():
+            lst = reduce(lambda acc,ele: acc + self.visit(ele), ctx.argument(), [])
+            return Prototype(name=ctx.ID().getText(), params=lst, retType = self.visit(ctx.typedef()))
+        return Prototype(name=ctx.ID().getText(), params=[self.visit(c) for c in ctx.argument()], retType = VoidType())
 
     # Visit a parse tree produced by MiniGoParser#argument.
     def visitArgument(self, ctx:MiniGoParser.ArgumentContext):
-        return self.visitChildren(ctx)
-
-
+        return [self.visit(ctx.typedef())] * len(ctx.ID())
+    
     # Visit a parse tree produced by MiniGoParser#var_access.
     def visitVar_access(self, ctx:MiniGoParser.Var_accessContext):
         size = ctx.getChildCount()

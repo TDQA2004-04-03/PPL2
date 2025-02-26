@@ -238,3 +238,19 @@ class ASTGenSuite(unittest.TestCase):
         };"""
         expect = str(Program([StructType(name="What",elements=[("value",IntType()),("names",ArrayType(eleType=StringType(),dimens=[IntLiteral(10)])),("check", Id("Now"))],methods=[])]))
         self.assertTrue(TestAST.checkASTGen(input,expect,46))
+
+    def test_47(self):
+        input = """type Calculator interface {
+            Add(x, y int) int;
+        };"""
+        expect = str(Program([InterfaceType(name="Calculator",methods=[Prototype(name="Add",params=[IntType(),IntType()],retType=IntType())])]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,47))
+
+    def test_48(self):
+        input = """type Calculator interface {
+            Add(x, y int) int;
+            Div(x float, y int) float;
+            Reset();
+        };"""
+        expect = str(Program([InterfaceType(name="Calculator",methods=[Prototype(name="Add",params=[IntType(),IntType()],retType=IntType()),Prototype(name="Div",params=[FloatType(),IntType()],retType=FloatType()),Prototype(name="Reset",params=[],retType=VoidType())])]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,48))
