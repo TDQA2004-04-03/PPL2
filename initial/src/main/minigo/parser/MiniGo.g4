@@ -70,7 +70,7 @@ argument: ID (SEPARATOR ID)* typedef;
 var_access: ID (array_index | field_access)*;
 
 
-field_access: '.' ID;
+field_access: DOT ID;
 
 method_var_access: (funccall | methodcall) (array_index | field_access)*;
 
@@ -164,6 +164,8 @@ ASSIGN_STMT_OP: ':=' {
     else:
         self.afterFor = False
 };
+
+DOT: '.';
 
 FLOAT: Digit* '.' Digit* ([eE] ('+'|'-')? Digit*)?;
 

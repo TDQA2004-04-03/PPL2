@@ -252,7 +252,7 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#method_receiver.
     def visitMethod_receiver(self, ctx:MiniGoParser.Method_receiverContext):
-        return ctx.ID(0).getText(), ctx.ID(1).getText()
+        return ctx.ID(0).getText(), Id(ctx.ID(1).getText())
 
 
     # Visit a parse tree produced by MiniGoParser#ret.

@@ -4,7 +4,7 @@ from TestUtils import TestParser
 class ParserSuite(unittest.TestCase):
     def test_lower_identifier(self):
         input = """func main() {
-            return;
+            a := b.c.d;
         };\n"""
-        expect = """"""
+        expect = """successful"""
         self.assertTrue(TestParser.checkParser(input,expect,1000))    
