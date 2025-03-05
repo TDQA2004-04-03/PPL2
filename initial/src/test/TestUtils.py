@@ -94,6 +94,7 @@ class TestAST:
         parser = MiniGoParser(tokens)
         tree = parser.program()
         asttree = ASTGeneration().visit(tree)
+#        dest.write(expect + '\n')
         dest.write(str(asttree))
         dest.close()
         dest = open("./test/solutions/" + str(num) + ".txt","r")

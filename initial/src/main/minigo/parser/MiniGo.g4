@@ -72,11 +72,13 @@ var_access: ID (array_index | field_access)*;
 
 field_access: '.' ID;
 
-method_var_access: methodcall (array_index | '.' ID)*;
+method_var_access: (funccall | methodcall) (array_index | field_access)*;
 
-func_and_method_decl: FUNC method_receiver? method_signature block;
+func_and_method_decl: FUNC method_receiver? func_signature block;
+func_signature: ID LPARENTHESIS (argument (SEPARATOR argument)*)? RPARENTHESIS typedef?;
 method_receiver: LPARENTHESIS ID ID RPARENTHESIS;
-ret: RETURN (expression | array | structliteral);
+
+ret: RETURN (expression | array | structliteral)?;
 funccall: ID LPARENTHESIS (expression (SEPARATOR expression)*)? RPARENTHESIS;
 methodcall: methodcall '.' ID LPARENTHESIS (expression (SEPARATOR expression)*)? RPARENTHESIS  
         | var_access '.' ID LPARENTHESIS (expression (SEPARATOR expression)*)? RPARENTHESIS;
@@ -98,9 +100,8 @@ block: LBRACE statement+ RBRACE;
 
 for_loop
     : FOR expression block
-    | FOR (assignment_for | vardeclassign) SEMI expression SEMI assignment block
+    | FOR (assignment | vardeclassign) SEMI expression SEMI assignment block
     | FOR (ID | '_') SEPARATOR ID ASSIGN_STMT_OP RANGE ID block;
-assignment_for: ID (ASSIGN_OP | ASSIGN_STMT_OP) (expression | array | structliteral);
 
 fragment BINARY: '0' [bB] [0-1]+;
 fragment OCTAL: '0' [oO] [0-7]+;

@@ -16,21 +16,24 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#statement.
     def visitStatement(self, ctx:MiniGoParser.StatementContext):
-        return self.visitChildren(ctx)
+        if ctx.BREAK():
+            return Break()
+        if ctx.CONTINUE():
+            return Continue()
+        return self.visit(ctx.getChild(0))
 
 
     # Visit a parse tree produced by MiniGoParser#typedef.
     def visitTypedef(self, ctx:MiniGoParser.TypedefContext):
         if ctx.ATOMIC_TYPE() != None:
-            match ctx.ATOMIC_TYPE().getText():
-                case 'int':
-                    return IntType()
-                case 'float':
-                    return FloatType()
-                case 'boolean':
-                    return BoolType()
-                case 'string':
-                    return StringType()
+            if ctx.ATOMIC_TYPE().getText() == 'int':
+                return IntType()
+            if ctx.ATOMIC_TYPE().getText() == 'float':
+                return FloatType()            
+            if ctx.ATOMIC_TYPE().getText() == 'boolean':
+                return BoolType()
+            if ctx.ATOMIC_TYPE().getText() == 'string':
+                return StringType()
         elif ctx.ID() != None:
             return Id(ctx.ID().getText())
         elif ctx.array_type() != None:
@@ -86,15 +89,14 @@ class ASTGeneration(MiniGoVisitor):
                 list_index.append(Id(arr_index.getText()))
         
         if ctx.ATOMIC_TYPE() != None:
-            match ctx.ATOMIC_TYPE().getText():
-                case 'int':
-                    return IntType(), list_index
-                case 'float':
-                    return FloatType(), list_index
-                case 'boolean':
-                    return BoolType(), list_index
-                case 'string':
-                    return StringType(), list_index
+            if ctx.ATOMIC_TYPE().getText() == 'int':
+                return IntType(), list_index
+            if ctx.ATOMIC_TYPE().getText() == 'float':
+                return FloatType(), list_index      
+            if ctx.ATOMIC_TYPE().getText() == 'boolean':
+                return BoolType(), list_index
+            if ctx.ATOMIC_TYPE().getText() == 'string':
+                return StringType(), list_index
         else:
             return Id(ctx.ID().getText()), list_index
                     
@@ -150,14 +152,14 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#method_signature.
     def visitMethod_signature(self, ctx:MiniGoParser.Method_signatureContext):
+        lst = reduce(lambda acc,ele: acc + self.visit(ele), ctx.argument(), [])
         if ctx.typedef():
-            lst = reduce(lambda acc,ele: acc + self.visit(ele), ctx.argument(), [])
-            return Prototype(name=ctx.ID().getText(), params=lst, retType = self.visit(ctx.typedef()))
-        return Prototype(name=ctx.ID().getText(), params=[self.visit(c) for c in ctx.argument()], retType = VoidType())
+            return Prototype(name=ctx.ID().getText(), params=[c.parType for c in lst], retType = self.visit(ctx.typedef()))
+        return Prototype(name=ctx.ID().getText(), params=[c.parType for c in lst], retType = VoidType())
 
     # Visit a parse tree produced by MiniGoParser#argument.
     def visitArgument(self, ctx:MiniGoParser.ArgumentContext):
-        return [self.visit(ctx.typedef())] * len(ctx.ID())
+        return [ParamDecl(c.getText(), self.visit(ctx.typedef())) for c in ctx.ID()]
     
     # Visit a parse tree produced by MiniGoParser#var_access.
     def visitVar_access(self, ctx:MiniGoParser.Var_accessContext):
@@ -173,9 +175,9 @@ class ASTGeneration(MiniGoVisitor):
                     if cscArr or lst == []:
                         lst.append(child)
                     if child.getChildCount() == 3:
-                        return ArrayCell(arr=str(id),idx=[self.visit(c) for c in lst])
+                        return ArrayCell(arr=id,idx=[self.visit(c) for c in lst])
                     else:
-                        return FieldAccess(receiver=str(id),field=self.visit(child))
+                        return FieldAccess(receiver=id,field=self.visit(child))
                 else:
                     child = child_lst[0]
                     next_child = child_lst[1]
@@ -189,34 +191,75 @@ class ASTGeneration(MiniGoVisitor):
                     else:
                         lside = FieldAccess(receiver=str(id),field=self.visit(child))
                         if next_child.getChildCount() == 3:
-#                            print(f"handling_child_list({lside}, {[c.getText() for c in child_lst[1:]]})")
                             return handling_child_list(lside, child_lst[1:], lst=[])
                         else:
                             return handling_child_list(lside, child_lst[1:], False, True, lst)
 
-            return handling_child_list(ctx.ID().getText(), child_list)
+            return handling_child_list(Id(ctx.ID().getText()), child_list)
     
     def visitField_access(self, ctx:MiniGoParser.Field_accessContext):
         return ctx.ID().getText()
 
     # Visit a parse tree produced by MiniGoParser#method_var_access.
     def visitMethod_var_access(self, ctx:MiniGoParser.Method_var_accessContext):
-        return self.visitChildren(ctx)
+        size = ctx.getChildCount()
+        if size == 1:
+            return self.visit(ctx.getChild(0))
+        else:
+            child_list = [ctx.getChild(i) for i in range(1, size)]
+            
+            def handling_child_list(id, child_lst,cscArr=False,cscField=False,lst=[]):
+                if len(child_lst) == 1:
+                    child = child_lst[0]
+                    if cscArr or lst == []:
+                        lst.append(child)
+                    if child.getChildCount() == 3:
+                        return ArrayCell(arr=id,idx=[self.visit(c) for c in lst])
+                    else:
+                        return FieldAccess(receiver=id,field=self.visit(child))
+                else:
+                    child = child_lst[0]
+                    next_child = child_lst[1]
+                    lst.append(child)
+                    if child.getChildCount() == 3:
+                        if next_child.getChildCount() == 3:
+                            return handling_child_list(str(id), child_lst[1:], True, False, lst)
+                        else:
+                            arr_ind = ArrayCell(arr=id,idx=[self.visit(c) for c in lst])
+                            return handling_child_list(str(arr_ind), child_lst[1:], lst=[])
+                    else:
+                        lside = FieldAccess(receiver=str(id),field=self.visit(child))
+                        if next_child.getChildCount() == 3:
+                            return handling_child_list(lside, child_lst[1:], lst=[])
+                        else:
+                            return handling_child_list(lside, child_lst[1:], False, True, lst)
 
+            return handling_child_list(self.visit(ctx.getChild(0)), child_list)
 
     # Visit a parse tree produced by MiniGoParser#func_and_method_decl.
     def visitFunc_and_method_decl(self, ctx:MiniGoParser.Func_and_method_declContext):
-        return self.visitChildren(ctx)
+        func_name, func_params, ret_type = self.visit(ctx.func_signature())
+        if ctx.method_receiver():
+            rcver, rType = self.visit(ctx.method_receiver())
+            return MethodDecl(receiver = rcver, recType = rType, fun = FuncDecl(name=func_name, params=func_params, retType = ret_type, body  = self.visit(ctx.block())))
+        return FuncDecl(name=func_name, params=func_params, retType = ret_type, body  = self.visit(ctx.block()))        
 
+    def visitFunc_signature(self, ctx:MiniGoParser.Func_signatureContext):
+        lst = reduce(lambda acc,ele: acc + self.visit(ele), ctx.argument(), [])
+        if ctx.typedef():
+            return ctx.ID().getText(), lst, self.visit(ctx.typedef())
+        return ctx.ID().getText(), lst, VoidType()
 
     # Visit a parse tree produced by MiniGoParser#method_receiver.
     def visitMethod_receiver(self, ctx:MiniGoParser.Method_receiverContext):
-        return self.visitChildren(ctx)
+        return ctx.ID(0).getText(), ctx.ID(1).getText()
 
 
     # Visit a parse tree produced by MiniGoParser#ret.
     def visitRet(self, ctx:MiniGoParser.RetContext):
-        return self.visitChildren(ctx)
+        if ctx.getChildCount() == 1:
+            return Return(expr=None)
+        return Return(self.visit(ctx.getChild(1)))
 
 
     # Visit a parse tree produced by MiniGoParser#funccall.
@@ -233,10 +276,13 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#assignment.
     def visitAssignment(self, ctx:MiniGoParser.AssignmentContext):
+        lhs = self.visit(ctx.getChild(0))
+        rhs = self.visit(ctx.getChild(2))
         if ctx.ASSIGN_STMT_OP() != None:
-            lhs = self.visit(ctx.getChild(0))
-            rhs = self.visit(ctx.getChild(2))
             return Assign(lhs, rhs)
+        else:
+            right_op = ctx.getChild(1).getText()[0]
+            return Assign(lhs, BinaryOp(op=right_op, left=lhs, right=rhs))
 
 
     # Visit a parse tree produced by MiniGoParser#expression.
@@ -253,27 +299,33 @@ class ASTGeneration(MiniGoVisitor):
 
     # Visit a parse tree produced by MiniGoParser#if_stmt.
     def visitIf_stmt(self, ctx:MiniGoParser.If_stmtContext):
-        return self.visitChildren(ctx)
-
+        if ctx.getChildCount() == 2:
+            return If(self.visit(ctx.if_condition()), self.visit(ctx.block(0)), None)
+        else:
+            return If(self.visit(ctx.if_condition()), self.visit(ctx.block(0)), self.visit(ctx.getChild(3)))
 
     # Visit a parse tree produced by MiniGoParser#if_condition.
     def visitIf_condition(self, ctx:MiniGoParser.If_conditionContext):
-        return self.visitChildren(ctx)
+        return self.visit(ctx.expression())
 
 
     # Visit a parse tree produced by MiniGoParser#block.
     def visitBlock(self, ctx:MiniGoParser.BlockContext):
-        return self.visitChildren(ctx)
+        return Block([self.visit(s) for s in ctx.statement()])
 
 
     # Visit a parse tree produced by MiniGoParser#for_loop.
     def visitFor_loop(self, ctx:MiniGoParser.For_loopContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by MiniGoParser#assignment_for.
-    def visitAssignment_for(self, ctx:MiniGoParser.Assignment_forContext):
-        return self.visitChildren(ctx)
+        if ctx.getChildCount() == 3:
+            return ForBasic(self.visit(ctx.expression()), self.visit(ctx.block()))
+        if ctx.RANGE() == None:
+            if ctx.vardeclassign() != None:
+                return ForStep(init = self.visit(ctx.vardeclassign()), cond = self.visit(ctx.expression()), upda = self.visit(ctx.assignment(0)), loop = self.visit(ctx.block()))
+            return ForStep(init = self.visit(ctx.assignment(0)), cond = self.visit(ctx.expression()), upda = self.visit(ctx.assignment(1)), loop = self.visit(ctx.block()))
+        
+        if ctx.getChild(1).getText() == '_':
+            return ForEach(idx=None, value = Id(ctx.ID(0).getText()), arr = Id(ctx.ID(1).getText()), loop = self.visit(ctx.block())) 
+        return ForEach(idx=Id(ctx.ID(0).getText()), value = Id(ctx.ID(1).getText()), arr = Id(ctx.ID(2).getText()), loop = self.visit(ctx.block())) 
 
 
     # Visit a parse tree produced by MiniGoParser#literal.

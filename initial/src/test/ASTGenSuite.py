@@ -110,42 +110,42 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_22(self):
         input = """var a = b[1];"""
-        expect = str(Program([VarDecl("a",None,ArrayCell("b",[IntLiteral(1)]))]))
+        expect = str(Program([VarDecl("a",None,ArrayCell(Id("b"),[IntLiteral(1)]))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,22))
 
     def test_23(self):
         input = """var a = John.age;"""
-        expect = str(Program([VarDecl("a",None,FieldAccess("John","age"))]))
+        expect = str(Program([VarDecl("a",None,FieldAccess(Id("John"),"age"))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,23))
 
     def test_24(self):
         input = """var a = m[1][1];"""
-        expect = str(Program([VarDecl("a",None,ArrayCell("m",[IntLiteral(1),IntLiteral(1)]))]))
+        expect = str(Program([VarDecl("a",None,ArrayCell(Id("m"),[IntLiteral(1),IntLiteral(1)]))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,24))
 
     def test_25(self):
         input = """var lname = Mike.fullname.lastname;"""
-        expect = str(Program([VarDecl("lname",None,FieldAccess(FieldAccess("Mike","fullname"),"lastname"))]))
+        expect = str(Program([VarDecl("lname",None,FieldAccess(FieldAccess(Id("Mike"),"fullname"),"lastname"))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,25))
 
     def test_26(self):
         input = """var x = m[5].value;"""
-        expect = str(Program([VarDecl("x",None,FieldAccess(ArrayCell("m",[IntLiteral(5)]),"value"))]))
+        expect = str(Program([VarDecl("x",None,FieldAccess(ArrayCell(Id("m"),[IntLiteral(5)]),"value"))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,26))
 
     def test_27(self):
         input = """var y = n.arr[2];"""
-        expect = str(Program([VarDecl("y",None,ArrayCell(FieldAccess("n","arr"),[IntLiteral(2)]))]))
+        expect = str(Program([VarDecl("y",None,ArrayCell(FieldAccess(Id("n"),"arr"),[IntLiteral(2)]))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,27))
 
     def test_28(self):
         input = """var z = matrix.row[7].real;"""
-        expect = str(Program([VarDecl("z",None,FieldAccess(ArrayCell(FieldAccess("matrix","row"),[IntLiteral(7)]),"real"))]))
+        expect = str(Program([VarDecl("z",None,FieldAccess(ArrayCell(FieldAccess(Id("matrix"),"row"),[IntLiteral(7)]),"real"))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,28))
 
     def test_29(self):
         input = """var name = a[2][5].dec.mat;"""
-        expect = str(Program([VarDecl("name",None,FieldAccess(FieldAccess(ArrayCell("a",[IntLiteral(2),IntLiteral(5)]),"dec"),"mat"))]))
+        expect = str(Program([VarDecl("name",None,FieldAccess(FieldAccess(ArrayCell(Id("a"),[IntLiteral(2),IntLiteral(5)]),"dec"),"mat"))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,29))
 
     def test_30(self):
@@ -175,7 +175,7 @@ class ASTGenSuite(unittest.TestCase):
 
     def test_35(self):
         input = """var m = stu[5].avg(Math, Lit, Eng);"""
-        expect = str(Program([VarDecl("m",None,MethCall(receiver=ArrayCell("stu",[IntLiteral(5)]),metName="avg",args=[Id("Math"),Id("Lit"),Id("Eng")]))]))
+        expect = str(Program([VarDecl("m",None,MethCall(receiver=ArrayCell(Id("stu"),[IntLiteral(5)]),metName="avg",args=[Id("Math"),Id("Lit"),Id("Eng")]))]))
         self.assertTrue(TestAST.checkASTGen(input,expect,35))
 
     def test_36(self):
@@ -254,3 +254,232 @@ class ASTGenSuite(unittest.TestCase):
         };"""
         expect = str(Program([InterfaceType(name="Calculator",methods=[Prototype(name="Add",params=[IntType(),IntType()],retType=IntType()),Prototype(name="Div",params=[FloatType(),IntType()],retType=FloatType()),Prototype(name="Reset",params=[],retType=VoidType())])]))
         self.assertTrue(TestAST.checkASTGen(input,expect,48))
+
+    def test_49(self):
+        input = """var lst = [2]Complex{Complex{real: 2, imag: 3},Complex{real:1, imag:4}};"""
+        expect = str(Program([VarDecl("lst",None,ArrayLiteral([IntLiteral(2)],Id("Complex"),[StructLiteral("Complex",elements=[("real",IntLiteral(2)),("imag",IntLiteral(3))]),StructLiteral("Complex",elements=[("real",IntLiteral(1)),("imag",IntLiteral(4))])]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,49))
+
+    def test_50(self):
+        input = """var stru = Strut{arr1: [2]int{1,2}, arr2: [2]float{1.0, 2.0}};"""
+        expect = str(Program([VarDecl("stru",None,StructLiteral(name="Strut",elements=[("arr1",ArrayLiteral([IntLiteral(2)],IntType(),[IntLiteral(1),IntLiteral(2)])),("arr2",ArrayLiteral([IntLiteral(2)],FloatType(),[FloatLiteral(1.0),FloatLiteral(2.0)]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,50))
+
+    def test_51(self):
+        input = """func main() {
+            var x int;
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([VarDecl("x",IntType(),None)]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,51))
+
+    def test_52(self):
+        input = """func main() {
+            break;
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([Break()]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,52))
+
+    def test_53(self):
+        input = """func main() {
+            continue;
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([Continue()]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,53))
+
+    def test_54(self):
+        input = """func area_square(a float) float {
+            return a * a;
+        };"""
+        expect = str(Program([FuncDecl(name="area_square",params=[ParamDecl("a", FloatType())],retType=FloatType(),body=Block([Return(BinaryOp(left=Id("a"),op='*',right=Id("a")))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,54))
+
+    def test_55(self):
+        input = """func foo(a, b float) float {
+            var result float = a * b;
+            return result;
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",FloatType()),ParamDecl("b",FloatType())],retType=FloatType(),body=Block([VarDecl("result",FloatType(),BinaryOp(left=Id("a"),op='*',right=Id("b"))),Return(Id("result"))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,55))
+
+    def test_56(self):
+        input = """func foo(a int) int {
+            a := a + 1;
+            return a;
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",IntType())],retType=IntType(),body=Block([Assign(Id("a"),BinaryOp(left=Id("a"),op='+',right=IntLiteral(1))),Return(Id("a"))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,56))
+
+    def test_57(self):
+        input = """func foo(a int) int {
+            a *= 2;
+            do_something();
+            return a;
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",IntType())],retType=IntType(),body=Block([Assign(Id("a"),BinaryOp(left=Id("a"),op='*',right=IntLiteral(2))),FuncCall("do_something",[]),Return(Id("a"))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,57))
+
+    def test_58(self):
+        input = """func foo(a int) int {
+            if (a > 5) {
+                return 1;
+            };
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",IntType())],retType=IntType(),body=Block([If(BinaryOp(op='>',left=Id("a"),right=IntLiteral(5)),Block([Return(IntLiteral(1))]),None)]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,58))
+
+    def test_59(self):
+        input = """func foo(a int) int {
+            if (a > 5) {
+                return 1;
+            } else {
+                return 0;
+            };
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",IntType())],retType=IntType(),body=Block([If(BinaryOp(op='>',left=Id("a"),right=IntLiteral(5)),Block([Return(IntLiteral(1))]),Block([Return(IntLiteral(0))]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,59))
+
+    def test_60(self):
+        input = """func foo(a int) int {
+            if (a > 5) {
+                return 1;
+            } else if (a > 0) {
+                return 0;
+            } else {
+                return -1;
+            };
+        };"""
+        expect = str(Program([FuncDecl(name="foo",params=[ParamDecl("a",IntType())],retType=IntType(),body=Block([If(BinaryOp(op='>',left=Id("a"),right=IntLiteral(5)),Block([Return(IntLiteral(1))]),If(BinaryOp(op='>',left=Id("a"),right=IntLiteral(0)),Block([Return(IntLiteral(0))]),Block([Return(UnaryOp(op='-',body=IntLiteral(1)))])))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,60))
+
+    def test_61(self):
+        input = """func main() int {
+            a := 0;
+            S := 0;
+            for a < 10 {
+                S += a;
+            };
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=IntType(),body=Block([Assign(Id("a"),IntLiteral(0)),Assign(Id("S"),IntLiteral(0)),ForBasic(BinaryOp(op='<',left=Id("a"),right=IntLiteral(10)),Block([Assign(Id("S"),BinaryOp(left=Id("S"),op='+',right=Id("a")))]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,61))
+
+    def test_62(self):
+        input = """func main() int {
+            S := 0;
+            for a := 0; a < 20; a += 2 {
+                S += a;
+            };
+        };
+        """
+        expect = str(Program([FuncDecl(name="main",params=[],retType=IntType(),body=Block([Assign(Id("S"),IntLiteral(0)),ForStep(Assign(Id("a"),IntLiteral(0)),BinaryOp(op='<',left=Id("a"),right=IntLiteral(20)),Assign(Id("a"),BinaryOp(left=Id("a"),op='+',right=IntLiteral(2))),Block([Assign(Id("S"),BinaryOp(left=Id("S"),op='+',right=Id("a")))]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,62))
+
+    def test_63(self):
+        input = """func main() {
+            for index, value := range array {
+                continue;
+            };
+        };
+        """
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([ForEach(idx=Id("index"),value=Id("value"),arr=Id("array"),loop=Block([Continue()]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,63))
+
+    def test_64(self):
+        input = """func (p Person) Greet() {
+            putStringLn("Hello");
+        };"""
+        expect = str(Program([MethodDecl(receiver="p",recType="Person",fun=FuncDecl(name="Greet",params=[],retType=VoidType(),body=Block([FuncCall("putStringLn",[StringLiteral("\"Hello\"")])])))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,64))
+
+    def test_65(self):
+        input = """
+        func main() {
+            if (delta > 0) {
+                putIntLn(2);
+            } else if (delta == 0) {
+                putIntLn(1);
+            } else {
+                putIntLn(0);
+            };
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([If(BinaryOp(op='>',left=Id("delta"),right=IntLiteral(0)),Block([FuncCall("putIntLn",[IntLiteral(2)])]),If(BinaryOp(op='==',left=Id("delta"),right=IntLiteral(0)),Block([FuncCall("putIntLn",[IntLiteral(1)])]),Block([FuncCall("putIntLn",[IntLiteral(0)])])))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,65))
+
+    def test_66(self):
+        input = """
+        func main() {
+            for var i int = 0; i <= 100; i += 1 {
+                S += i % 29;
+            }
+        };"""
+        expect = str(Program([FuncDecl(name="main",params=[],retType=VoidType(),body=Block([ForStep(init=VarDecl("i",IntType(),IntLiteral(0)),cond=BinaryOp(op="<=",left=Id("i"),right=IntLiteral(100)),upda=Assign(lhs=Id("i"),rhs=BinaryOp(op='+',left=Id("i"),right=IntLiteral(1))),loop=Block([Assign(lhs=Id("S"),rhs=BinaryOp(op='+',left=Id("S"),right=BinaryOp(op='%',left=Id("i"),right=IntLiteral(29))))]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,66))
+
+    def test_67(self):
+        input = """var arr = [x]int {5, 7, 9, a, b};"""
+        expect = str(Program([VarDecl("arr",None,ArrayLiteral(dimens=[Id("x")],eleType=IntType(),value=[IntLiteral(5),IntLiteral(7),IntLiteral(9),Id("a"),Id("b")]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,67))
+
+    def test_68(self):
+        input = """var q float = c + (2 * a * a * a - 9 * a * b) / 27;"""
+        expect = str(Program([VarDecl("q",FloatType(),BinaryOp(op='+',left=Id("c"),right=BinaryOp(op='/',left=BinaryOp(op='-',left=BinaryOp(op='*',left=BinaryOp(op='*',left=BinaryOp(op='*',left=IntLiteral(2),right=Id("a")),right=Id("a")),right=Id("a")),right=BinaryOp(op='*',left=BinaryOp(op='*',left=IntLiteral(9),right=Id("a")),right=Id("b"))),right=IntLiteral(27))))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,68))
+
+    def test_69(self):
+        input = """var str string = "Elimination\tChamber";"""
+        expect = str(Program([VarDecl("str",StringType(),StringLiteral("\"Elimination\tChamber\""))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,69))
+
+    def test_70(self):
+        input = """type Person struct {
+            name string;
+            age int;
+        };"""
+        expect = str(Program([StructType("Person",elements=[("name",StringType()),("age",IntType())],methods=[])]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,70))
+
+    def test_71(self):
+        input = """var x = foo()[5];"""
+        expect = str(Program([VarDecl("x",None,ArrayCell(FuncCall("foo",[]),[IntLiteral(5)]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,71))
+
+    def test_72(self):
+        input = """var y = foo().value;"""
+        expect = str(Program([VarDecl("y",None,FieldAccess(FuncCall("foo",[]),"value"))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,72))
+
+    def test_73(self):
+        input = """var z = calculator.calc().value[0];"""
+        expect = str(Program([VarDecl("z",None,ArrayCell(FieldAccess(MethCall(Id("calculator"),"calc",[]),"value"),[IntLiteral(0)]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,73))
+
+    def test_74(self):
+        input = """func Fibonacci(n int) int {
+            if (n == 1 || n == 2) {
+                return 1;
+            };
+            return Fibonacci(n - 1) + Fibonacci(n - 2);
+        };"""
+        expect = str(Program([FuncDecl("Fibonacci",[ParamDecl("n",IntType())],IntType(),Block([If(BinaryOp("||",BinaryOp("==",Id("n"),IntLiteral(1)),BinaryOp("==",Id("n"),IntLiteral(2))),Block([Return(IntLiteral(1))]),None),Return(BinaryOp("+",FuncCall("Fibonacci",[BinaryOp("-",Id("n"),IntLiteral(1))]),FuncCall("Fibonacci",[BinaryOp("-",Id("n"),IntLiteral(2))])))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,74))
+
+    def test_75(self):
+        input = """
+            var arr = [2]Person {Person{name: "John", age: 20}, Person{name: "Mike", age: 21}};
+            func main() {
+                for _, value := range arr {
+                    putIntLn(value.name);
+            };
+        };"""
+        expect = str(Program([VarDecl("arr",None,ArrayLiteral([IntLiteral(2)],Id("Person"),[StructLiteral("Person",[("name",StringLiteral("\"John\"")),("age",IntLiteral(20))]),StructLiteral("Person",[("name",StringLiteral("\"Mike\"")),("age",IntLiteral(21))])])),FuncDecl("main",[],VoidType(),Block([ForEach(idx=None,value=Id("value"),arr=Id("arr"),loop=Block([FuncCall("putIntLn",[FieldAccess(Id("value"),"name")])]))]))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,75))
+
+    def test_76(self):
+        input = """var str boolean = "Hello" > "World" + " Life\";"""
+        expect = str(Program([VarDecl("str",BoolType(),BinaryOp(">",StringLiteral("\"Hello\""),BinaryOp("+",StringLiteral("\"World\""),StringLiteral("\" Life\""))))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,76))
+
+    def test_77(self):
+        input = """const value = !(a[5] * -24 - 16) && b.now || c > -19 && !(c == 5);"""
+        expect = str(Program([ConstDecl("value",None,BinaryOp(op="||",left=BinaryOp(op='&&',left=UnaryOp(op='!',body=BinaryOp(op='-',left=BinaryOp(op='*',left=ArrayCell(Id("a"),[IntLiteral(5)]),right=UnaryOp(op='-',body=IntLiteral(24))),right=IntLiteral(16))),right=FieldAccess(Id("b"),"now")),right=BinaryOp(op='&&',left=BinaryOp(op='>',left=Id("c"),right=UnaryOp(op='-',body=IntLiteral(19))),right=UnaryOp(op='!', body=BinaryOp(op='==',left=Id("c"),right=IntLiteral(5))))))]))
+        self.assertTrue(TestAST.checkASTGen(input,expect,77))
+
